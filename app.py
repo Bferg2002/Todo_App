@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -109,6 +109,46 @@ def delete(todo_id):
 def logout():
     logout_user()
     return redirect(url_for('index'))
+
+# REST API Endpoints
+@app.route('/api/todos', methods=['GET'])
+@login_required
+def get_todos():
+    todos = ToDo.query.filter_by(user_id=current_user.id).all()
+    todos_list = [{'id': todo.id, 'title': todo.title, 'is_done': todo.is_done} for todo in todos]
+    return jsonify(todos_list)
+
+@app.route('/api/todos', methods=['POST'])
+@login_required
+def create_todo():
+    data = request.get_json()
+    title = data.get('title')
+    new_todo = ToDo(title=title, user_id=current_user.id)
+    db.session.add(new_todo)
+    db.session.commit()
+    return jsonify({'message': 'To-Do item created successfully'}), 201
+
+@app.route('/api/todos/<int:todo_id>', methods=['PUT'])
+@login_required
+def update_todo_api(todo_id):
+    todo = ToDo.query.get_or_404(todo_id)
+    if todo.user_id != current_user.id:
+        return jsonify({'error': 'You do not have permission to update this item'}), 403
+    data = request.get_json()
+    todo.title = data.get('title', todo.title)
+    todo.is_done = data.get('is_done', todo.is_done)
+    db.session.commit()
+    return jsonify({'message': 'To-Do item updated successfully'})
+
+@app.route('/api/todos/<int:todo_id>', methods=['DELETE'])
+@login_required
+def delete_todo_api(todo_id):
+    todo = ToDo.query.get_or_404(todo_id)
+    if todo.user_id != current_user.id:
+        return jsonify({'error': 'You do not have permission to delete this item'}), 403
+    db.session.delete(todo)
+    db.session.commit()
+    return jsonify({'message': 'To-Do item deleted successfully'})
 
 # Run the app
 if __name__ == '__main__':
