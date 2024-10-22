@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>Welcome, {{ current_user.username }}</h1>
+    <a href="{{ url_for('logout') }}">Logout</a>
+    <h2>Your To-Do List</h2>
+    <ul>
+        {% for todo in todos %}
+        <li>
+            {{ todo.title }} - {% if todo.is_done %}Done{% else %}Not Done{% endif %}
+            <a href="{{ url_for('update', todo_id=todo.id) }}">Toggle</a>
+            <a href="{{ url_for('delete', todo_id=todo.id) }}">Delete</a>
+        </li>
+        {% endfor %}
+    </ul>
+    <form action="{{ url_for('add') }}" method="post">
+        <label for="title">New To-Do:</label>
+        <input type="text" name="title" id="title" required>
+        <button type="submit">Add</button>
+    </form>
+</body>
+</html>
