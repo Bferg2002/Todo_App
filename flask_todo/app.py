@@ -1,11 +1,14 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import os
 
-# Initialize Flask app
-app = Flask(__name__)
+# Set the base path for your project
+base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+# Initialize Flask app and include shared_frontend as a template directory
+app = Flask(__name__, template_folder=os.path.join(base_path, 'shared_frontend'))
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todo_app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -36,22 +39,48 @@ def load_user(user_id):
 with app.app_context():
     db.create_all()
 
-# Routes
+# Serve HTML files from shared_frontend directory
+@app.route('/shared_frontend/<path:filename>')
+def shared_static(filename):
+    return send_from_directory(os.path.join(base_path, 'shared_frontend'), filename)
+
+# Routes to render pages
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return send_from_directory(os.path.join(base_path, 'shared_frontend'), 'index.html')
 
+@app.route('/login.html')
+def login_page():
+    return send_from_directory(os.path.join(base_path, 'shared_frontend'), 'login.html')
+
+@app.route('/register.html')
+def register_page():
+    return send_from_directory(os.path.join(base_path, 'shared_frontend'), 'register.html')
+
+@app.route('/dashboard.html')
+@login_required
+def dashboard_page():
+    return send_from_directory(os.path.join(base_path, 'shared_frontend'), 'dashboard.html')
+
+# Routes for authentication
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+
+        # Check if the username already exists
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            flash('Username already taken. Please choose a different username.', 'danger')
+            return redirect(url_for('register_page'))
+
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         new_user = User(username=username, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
         flash('Account created successfully!', 'success')
-        return redirect(url_for('login'))
+        return redirect(url_for('login_page'))
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
