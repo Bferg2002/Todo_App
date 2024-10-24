@@ -63,7 +63,7 @@ def dashboard_page():
     return send_from_directory(os.path.join(base_path, 'shared_frontend'), 'dashboard.html')
 
 # Routes for authentication
-@app.route('/register', methods=['GET', 'POST'])
+@app.route('/register', methods=['POST'])
 def register():
     if request.method == 'POST':
         username = request.form['username']
@@ -83,7 +83,7 @@ def register():
         return redirect(url_for('login_page'))
     return render_template('register.html')
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
@@ -91,47 +91,10 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and bcrypt.check_password_hash(user.password, password):
             login_user(user)
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('dashboard_page'))
         else:
             flash('Login Unsuccessful. Please check username and password', 'danger')
     return render_template('login.html')
-
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    todos = ToDo.query.filter_by(user_id=current_user.id).all()
-    return render_template('dashboard.html', todos=todos)
-
-@app.route('/add', methods=['POST'])
-@login_required
-def add():
-    title = request.form['title']
-    new_todo = ToDo(title=title, user_id=current_user.id)
-    db.session.add(new_todo)
-    db.session.commit()
-    return redirect(url_for('dashboard'))
-
-@app.route('/update/<int:todo_id>')
-@login_required
-def update(todo_id):
-    todo = ToDo.query.get_or_404(todo_id)
-    if todo.user_id != current_user.id:
-        flash('You do not have permission to update this item', 'danger')
-        return redirect(url_for('dashboard'))
-    todo.is_done = not todo.is_done
-    db.session.commit()
-    return redirect(url_for('dashboard'))
-
-@app.route('/delete/<int:todo_id>')
-@login_required
-def delete(todo_id):
-    todo = ToDo.query.get_or_404(todo_id)
-    if todo.user_id != current_user.id:
-        flash('You do not have permission to delete this item', 'danger')
-        return redirect(url_for('dashboard'))
-    db.session.delete(todo)
-    db.session.commit()
-    return redirect(url_for('dashboard'))
 
 @app.route('/logout')
 @login_required
@@ -181,4 +144,4 @@ def delete_todo_api(todo_id):
 
 # Run the app
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
