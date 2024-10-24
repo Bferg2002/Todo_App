@@ -141,7 +141,7 @@ def delete_todo_api(todo_id):
     db.session.delete(todo)
     db.session.commit()
     return jsonify({'message': 'To-Do item deleted successfully'})
-
+ 
 # Run the app
 if __name__ == '__main__':
     app.run(debug=True)
