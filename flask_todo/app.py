@@ -181,4 +181,4 @@ def delete_todo_api(todo_id):
 
 # Run the app
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
